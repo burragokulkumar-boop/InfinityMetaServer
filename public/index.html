@@ -98,7 +98,7 @@ h1{font-size:28px;letter-spacing:-.03em}
           <button class="action green" onclick="send('ENTER_KIOSK')">Enter kiosk</button>
           <button class="action" onclick="send('RESTART_KIOSK')">Restart kiosk</button>
           <button class="action" onclick="showMessage()">Show message</button>
-          <button class="action" onclick="send('CLEAR_APP_DATA')">Clear Infinity Learn data</button>
+          <button class="action" onclick="confirmClearData()">Clear Infinity Learn data</button>
           <button class="action danger" onclick="confirmExit()">Exit kiosk</button>
         </div>
         <div class="section-title" style="margin-top:25px">Status</div>
@@ -186,6 +186,9 @@ function showMessage(){
 }
 function confirmExit(){
   if(confirm('Send Exit Kiosk to this device?'))send('EXIT_KIOSK');
+}
+function confirmClearData(){
+  if(confirm('Clear all Infinity Learn app data on this device? This cannot be undone.'))send('CLEAR_APP_DATA');
 }
 loadDevices();
 setInterval(()=>selected?loadDetail():loadDevices(),15000);
