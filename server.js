@@ -1,4 +1,5 @@
 const express = require("express");
+const crypto = require("crypto");
 
 const app = express();
 
@@ -19,6 +20,31 @@ const VERSION = "2.0.0";
 const devices = new Map();
 const commands = new Map();
 const commandHistory = [];
+const adminSessions = new Map();
+
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+
+function parseCookies(req) {
+    const header = req.headers.cookie || "";
+    return Object.fromEntries(
+        header.split(";").filter(Boolean).map(part => {
+            const index = part.indexOf("=");
+            return [
+                part.slice(0, index).trim(),
+                decodeURIComponent(part.slice(index + 1).trim())
+            ];
+        })
+    );
+}
+
+function requireAdmin(req, res, next) {
+    const token = parseCookies(req).wonder_admin;
+    if (!token || !adminSessions.has(token)) {
+        return res.status(401).json({ error: "Admin authentication required" });
+    }
+    next();
+}
 
 const SUPPORTED_COMMANDS = new Set([
     "PING",
@@ -81,6 +107,33 @@ app.get("/", (req, res) => {
             SUPPORTED_COMMANDS
         )
     });
+});
+
+app.post("/api/admin/login", (req, res) => {
+    if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+        return res.status(503).json({ error: "Admin login is not configured" });
+    }
+
+    const { username, password } = req.body || {};
+    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+        return res.status(401).json({ error: "Invalid username or password" });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    adminSessions.set(token, { createdAt: Date.now() });
+    res.setHeader("Set-Cookie", `wonder_admin=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=43200`);
+    res.json({ success: true });
+});
+
+app.get("/api/admin/session", requireAdmin, (req, res) => {
+    res.json({ authenticated: true });
+});
+
+app.post("/api/admin/logout", requireAdmin, (req, res) => {
+    const token = parseCookies(req).wonder_admin;
+    adminSessions.delete(token);
+    res.setHeader("Set-Cookie", "wonder_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");
+    res.json({ success: true });
 });
 
 app.get("/api/health", (req, res) => {
@@ -243,7 +296,7 @@ app.post("/api/commands/ack", (req, res) => {
 /*
  * Admin: list registered devices.
  */
-app.get("/api/admin/devices", (req, res) => {
+app.get("/api/admin/devices", requireAdmin, (req, res) => {
     const result =
         Array.from(
             devices.values()
@@ -301,7 +354,7 @@ app.get(
  * These command names exactly match the current
  * InfinityMetaKiosk ManagementCommandReceiver.
  */
-app.post("/api/admin/command", (req, res) => {
+app.post("/api/admin/command", requireAdmin, (req, res) => {
     const {
         deviceId,
         type,
