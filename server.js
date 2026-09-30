@@ -25,7 +25,8 @@ const SUPPORTED_COMMANDS = new Set([
     "SHOW_MESSAGE",
     "ENTER_KIOSK",
     "RESTART_KIOSK",
-    "EXIT_KIOSK"
+    "EXIT_KIOSK",
+    "CLEAR_APP_DATA"
 ]);
 
 function now() {
