@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Infinity Meta • Device Manager</title>
+<style>
+:root{
+  --bg:#f4f7fb;--panel:#fff;--text:#172033;--muted:#687386;
+  --line:#e2e7ef;--accent:#1769ff;--green:#18a66a;--red:#d83b4b;
+  --shadow:0 10px 30px rgba(25,45,80,.08);--radius:18px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button{font:inherit;cursor:pointer}
+.header{height:72px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 24px;position:sticky;top:0;z-index:10}
+.brand{font-size:20px;font-weight:750;letter-spacing:-.02em}
+.brand span{color:var(--accent)}
+.container{max-width:1180px;margin:0 auto;padding:28px 20px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:22px}
+h1,h2,h3{margin:0}
+h1{font-size:28px;letter-spacing:-.03em}
+.subtitle{color:var(--muted);margin-top:5px}
+.status{display:flex;align-items:center;gap:8px;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:#aeb7c5}
+.dot.live{background:var(--green)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);transition:.15s}
+.card:hover{transform:translateY(-2px);border-color:#c9d5e8}
+.device-head{display:flex;justify-content:space-between;gap:12px}
+.device-name{font-weight:720;font-size:17px}
+.badge{font-size:12px;font-weight:700;padding:5px 9px;border-radius:999px;background:#eef1f5;color:#687386}
+.badge.online{background:#e8f8f1;color:#087b4b}
+.badge.offline{background:#f2f3f5;color:#687386}
+.meta{margin:14px 0;color:var(--muted);font-size:13px}
+.meta div{margin:4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.open{width:100%;border:0;border-radius:12px;background:var(--accent);color:#fff;padding:12px;font-weight:700}
+.empty{background:#fff;border:1px dashed #cfd7e3;border-radius:var(--radius);padding:50px;text-align:center;color:var(--muted)}
+.hidden{display:none!important}
+.back{border:0;background:transparent;color:var(--accent);padding:0;margin-bottom:14px;font-weight:700}
+.detail{display:grid;grid-template-columns:1.4fr .8fr;gap:18px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+.info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+.info{border:1px solid var(--line);border-radius:13px;padding:13px}
+.info small{display:block;color:var(--muted);margin-bottom:3px}
+.info strong{display:block;overflow-wrap:anywhere}
+.section-title{font-size:16px;font-weight:750;margin-bottom:14px}
+.actions{display:grid;gap:10px}
+.action{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;text-align:left;font-weight:650}
+.action:hover{background:#f7f9fc}
+.action.danger{border-color:#f0c9ce;color:var(--red)}
+.action.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.action.green{background:#eaf9f2;color:#087b4b;border-color:#c7eedc}
+.log{max-height:330px;overflow:auto;border-top:1px solid var(--line);margin-top:15px}
+.log-row{padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.log-row b{font-size:12px}
+.notice{position:fixed;right:18px;bottom:18px;background:#172033;color:#fff;padding:12px 15px;border-radius:12px;box-shadow:var(--shadow);z-index:50}
+@media(max-width:800px){.detail{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.info-grid{grid-template-columns:1fr}.header{padding:0 16px}}
+</style>
+</head>
+<body>
+<header class="header"><div class="brand"><span>Infinity</span> Meta Device Manager</div></header>
+
+<main class="container">
+  <section id="devicesPage">
+    <div class="top">
+      <div>
+        <h1>Devices</h1>
+        <div class="subtitle">All tablets currently registered with InfinityMetaKiosk.</div>
+      </div>
+      <div class="status"><span id="serverDot" class="dot"></span><span id="serverText">Checking server…</span></div>
+    </div>
+    <div id="deviceGrid" class="grid"></div>
+  </section>
+
+  <section id="detailPage" class="hidden">
+    <button class="back" onclick="showDevices()">← All devices</button>
+    <div class="top">
+      <div>
+        <h1 id="detailTitle">Device</h1>
+        <div class="subtitle" id="detailSubtitle"></div>
+      </div>
+      <div id="detailBadge" class="badge"></div>
+    </div>
+
+    <div class="detail">
+      <div class="panel">
+        <div class="section-title">Device information</div>
+        <div id="infoGrid" class="info-grid"></div>
+        <div class="section-title" style="margin-top:25px">Command history</div>
+        <div id="history" class="log"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Kiosk controls</div>
+        <div class="actions">
+          <button class="action primary" onclick="send('PING')">Test connection</button>
+          <button class="action green" onclick="send('ENTER_KIOSK')">Enter kiosk</button>
+          <button class="action" onclick="send('RESTART_KIOSK')">Restart kiosk</button>
+          <button class="action" onclick="showMessage()">Show message</button>
+          <button class="action" onclick="send('CLEAR_APP_DATA')">Clear Infinity Learn data</button>
+          <button class="action danger" onclick="confirmExit()">Exit kiosk</button>
+        </div>
+        <div class="section-title" style="margin-top:25px">Status</div>
+        <div id="statusText" class="subtitle">Ready.</div>
+      </div>
+    </div>
+  </section>
+</main>
+<div id="notice" class="notice hidden"></div>
+
+<script>
+let selected=null;
+let history=[];
+
+async function api(path,options){
+  const r=await fetch(path,options);
+  const text=await r.text();
+  let data={}; try{data=text?JSON.parse(text):{}}catch{}
+  if(!r.ok) throw new Error(data.error||('HTTP '+r.status));
+  return data;
+}
+function esc(v){
+  return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function toast(msg){
+  const n=document.getElementById('notice'); n.textContent=msg;n.classList.remove('hidden');
+  clearTimeout(window._toast);window._toast=setTimeout(()=>n.classList.add('hidden'),2600);
+}
+function setServer(ok){
+  document.getElementById('serverDot').className='dot '+(ok?'live':'');
+  document.getElementById('serverText').textContent=ok?'Server online':'Server unavailable';
+}
+async function loadDevices(){
+  try{
+    const h=await api('/api/health'); setServer(h.status==='ok');
+    const data=await api('/api/admin/devices');
+    const grid=document.getElementById('deviceGrid');
+    if(!data.devices?.length){
+      grid.innerHTML='<div class="empty">No InfinityMetaKiosk devices are registered yet.</div>';return;
+    }
+    grid.innerHTML=data.devices.map(d=>{
+      const name=d.model||'Unknown tablet';
+      return '<article class="card">'+
+        '<div class="device-head"><div class="device-name">'+esc(name)+'</div>'+
+        '<span class="badge '+(d.online?'online':'offline')+'">'+(d.online?'Online':'Offline')+'</span></div>'+
+        '<div class="meta"><div><b>Device ID:</b> '+esc(d.deviceId)+'</div>'+
+        '<div><b>Android:</b> '+esc(d.androidVersion)+' (SDK '+esc(d.sdk)+')</div>'+
+        '<div><b>App:</b> '+esc(d.packageName)+' · v'+esc(d.appVersion)+'</div>'+
+        '<div><b>Last seen:</b> '+esc(formatDate(d.lastSeen))+'</div></div>'+
+        '<button class="open" onclick="openDevice('+JSON.stringify(d.deviceId)+')">Open device</button></article>';
+    }).join('');
+  }catch(e){setServer(false);document.getElementById('deviceGrid').innerHTML='<div class="empty">Unable to load devices. '+esc(e.message)+'</div>'}
+}
+function formatDate(v){try{return new Date(v).toLocaleString()}catch{return v||'—'}}
+async function openDevice(id){
+  selected=id; document.getElementById('devicesPage').classList.add('hidden');document.getElementById('detailPage').classList.remove('hidden');
+  await loadDetail();
+}
+function showDevices(){selected=null;document.getElementById('detailPage').classList.add('hidden');document.getElementById('devicesPage').classList.remove('hidden');loadDevices()}
+async function loadDetail(){
+  try{
+    const r=await api('/api/admin/devices/'+encodeURIComponent(selected));const d=r.device;
+    document.getElementById('detailTitle').textContent=d.model||'Unknown tablet';
+    document.getElementById('detailSubtitle').textContent=d.deviceId;
+    const b=document.getElementById('detailBadge');b.textContent=d.online?'Online':'Offline';b.className='badge '+(d.online?'online':'offline');
+    const rows=[['Device ID',d.deviceId],['Model',d.model],['Android',d.androidVersion],['SDK',d.sdk],['Package',d.packageName],['App version',d.appVersion],['Registered',formatDate(d.registeredAt)],['Last seen',formatDate(d.lastSeen)]];
+    document.getElementById('infoGrid').innerHTML=rows.map(x=>'<div class="info"><small>'+esc(x[0])+'</small><strong>'+esc(x[1])+'</strong></div>').join('');
+    const h=await api('/api/admin/command-history?limit=100');
+    history=h.history.filter(x=>x.deviceId===selected).reverse();
+    document.getElementById('history').innerHTML=history.length?history.map(x=>'<div class="log-row"><b>'+esc(x.status)+'</b> · '+esc(x.commandId)+'<br>'+esc(x.message||'')+'<br><span class="subtitle">'+esc(formatDate(x.acknowledgedAt))+'</span></div>').join(''):'<div class="subtitle" style="padding-top:12px">No command acknowledgements yet.</div>';
+  }catch(e){toast(e.message)}
+}
+async function send(type,message=''){
+  if(!selected)return;
+  try{
+    await api('/api/admin/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceId:selected,type,message})});
+    document.getElementById('statusText').textContent=type+' queued for delivery.';
+    toast(type+' queued');
+    setTimeout(loadDetail,800);
+  }catch(e){toast(e.message)}
+}
+function showMessage(){
+  const m=prompt('Message to display on the tablet:');
+  if(m!==null && m.trim())send('SHOW_MESSAGE',m.trim());
+}
+function confirmExit(){
+  if(confirm('Send Exit Kiosk to this device?'))send('EXIT_KIOSK');
+}
+loadDevices();
+setInterval(()=>selected?loadDetail():loadDevices(),15000);
+</script>
+</body>
+</html>
