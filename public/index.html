@@ -26,6 +26,29 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;
 body:after{content:"";position:fixed;width:520px;height:520px;left:50%;top:135px;transform:translateX(-50%);pointer-events:none;border-radius:50%;
  background:radial-gradient(circle,rgba(139,92,255,.13),transparent 62%);filter:blur(10px)}
 button{font:inherit;cursor:pointer}
+.login-screen{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:24px;
+ background:radial-gradient(circle at 50% 42%,rgba(112,72,255,.2),transparent 30%),linear-gradient(145deg,#060511,#0b0820 52%,#070612)}
+.login-screen.hidden{display:none}
+.login-grid{position:absolute;inset:0;opacity:.2;background-image:linear-gradient(rgba(190,169,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(190,169,255,.06) 1px,transparent 1px);background-size:48px 48px}
+.login-orbit{position:absolute;width:390px;height:390px;border:1px solid rgba(176,108,255,.16);border-radius:50%;box-shadow:0 0 90px rgba(140,92,255,.08)}
+.login-orbit:before{content:"";position:absolute;inset:36px;border:1px solid rgba(127,220,255,.1);border-radius:50%}
+.login-card{position:relative;width:min(410px,100%);padding:34px;border:1px solid rgba(190,169,255,.3);border-radius:22px;background:linear-gradient(145deg,rgba(25,18,56,.88),rgba(10,8,25,.92));box-shadow:0 30px 100px rgba(0,0,0,.55),0 0 70px rgba(112,72,255,.1);backdrop-filter:blur(24px)}
+.login-card:before{content:"";position:absolute;left:18%;right:18%;top:0;height:1px;background:linear-gradient(90deg,transparent,#c0a0ff,transparent)}
+.login-mark{width:54px;height:54px;display:grid;place-items:center;border-radius:16px;margin-bottom:22px;border:1px solid rgba(190,169,255,.28);background:radial-gradient(circle,rgba(140,92,255,.3),rgba(140,92,255,.06));color:#d9c8ff;font-size:24px;box-shadow:0 0 28px rgba(140,92,255,.18)}
+.login-eyebrow{font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:#a99cc9;margin-bottom:9px}
+.login-title{font-size:31px;letter-spacing:-.045em;margin:0}
+.login-subtitle{color:#9189a9;margin:8px 0 25px}
+.login-form{display:grid;gap:13px}
+.login-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#8f87aa}
+.login-input{width:100%;margin-top:6px;padding:13px 14px;border-radius:10px;border:1px solid rgba(190,169,255,.2);outline:none;background:rgba(7,5,19,.62);color:#f6f2ff;transition:.15s}
+.login-input:focus{border-color:rgba(176,108,255,.7);box-shadow:0 0 0 3px rgba(140,92,255,.1),0 0 22px rgba(140,92,255,.08)}
+.login-button{margin-top:7px;padding:13px;border:1px solid rgba(176,108,255,.5);border-radius:10px;background:linear-gradient(135deg,#7548dd,#47319b);color:white;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 12px 30px rgba(90,50,170,.25)}
+.login-button:disabled{opacity:.55;cursor:wait}
+.login-error{min-height:18px;color:#ff8fa2;font-size:12px;text-align:center;margin-top:2px}
+.login-footer{text-align:center;color:#6f6885;font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-top:22px}
+.logout{border:1px solid rgba(255,113,141,.2);background:rgba(255,113,141,.04);color:#c995a1;padding:6px 10px;border-radius:999px;font-size:9px;letter-spacing:.12em;text-transform:uppercase}
+.logout:hover{border-color:rgba(255,113,141,.4);color:#ffacb8}
+.dashboard-hidden{display:none!important}
 .header{height:78px;display:flex;align-items:center;justify-content:space-between;padding:0 30px;position:sticky;top:0;z-index:20;
  background:rgba(7,6,18,.74);backdrop-filter:blur(22px);border-bottom:1px solid var(--line)}
 .brand{font-size:18px;font-weight:760;letter-spacing:.12em;text-transform:uppercase}
@@ -90,7 +113,24 @@ h1{font-size:39px;line-height:1.02;letter-spacing:-.055em}
 </style>
 </head>
 <body>
-<header class="header"><div class="brand"><span>Wonder</span> Kiosk</div><div class="header-right"><span class="header-tag">Remote Management</span><span class="header-tag">v2.0</span></div></header>
+<div id="loginScreen" class="login-screen">
+  <div class="login-grid"></div><div class="login-orbit"></div>
+  <section class="login-card">
+    <div class="login-mark">✦</div>
+    <div class="login-eyebrow">Wonder Kiosk · Secure Access</div>
+    <h1 class="login-title">Admin console</h1>
+    <div class="login-subtitle">Sign in to access remote device management.</div>
+    <form id="loginForm" class="login-form">
+      <label class="login-label">Username<input id="loginUsername" class="login-input" autocomplete="username" required></label>
+      <label class="login-label">Password<input id="loginPassword" class="login-input" type="password" autocomplete="current-password" required></label>
+      <button id="loginButton" class="login-button" type="submit">Authenticate</button>
+      <div id="loginError" class="login-error"></div>
+    </form>
+    <div class="login-footer">Authorized personnel only · Wonder Kiosk</div>
+  </section>
+</div>
+<div id="dashboardShell">
+<header class="header"><div class="brand"><span>Wonder</span> Kiosk</div><div class="header-right"><span class="header-tag">Remote Management</span><span class="header-tag">v2.0</span><button class="logout" onclick="logout()">Sign out</button></div></header>
 
 <main class="container">
   <section class="hero">
@@ -231,8 +271,47 @@ function confirmExit(){
 function confirmClearData(){
   if(confirm('Clear all Infinity Learn app data on this device? This cannot be undone.'))send('CLEAR_APP_DATA');
 }
-loadDevices();
+async function boot(){
+  try{
+    await api('/api/admin/session');
+    showDashboard();
+  }catch{
+    showLogin();
+  }
+}
+function showLogin(){
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('dashboardShell').classList.add('dashboard-hidden');
+}
+function showDashboard(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('dashboardShell').classList.remove('dashboard-hidden');
+  loadDevices();
+}
+document.getElementById('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const button=document.getElementById('loginButton');
+  const error=document.getElementById('loginError');
+  button.disabled=true;button.textContent='Authenticating…';error.textContent='';
+  try{
+    await api('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      username:document.getElementById('loginUsername').value.trim(),
+      password:document.getElementById('loginPassword').value
+    })});
+    document.getElementById('loginPassword').value='';
+    showDashboard();
+  }catch(err){error.textContent=err.message}
+  finally{button.disabled=false;button.textContent='Authenticate'}
+});
+async function logout(){
+  try{await api('/api/admin/logout',{method:'POST'})}catch{}
+  showLogin();
+  document.getElementById('loginUsername').value='';
+  document.getElementById('loginPassword').value='';
+}
+boot();
 setInterval(()=>selected?loadDetail():loadDevices(),15000);
 </script>
+</div>
 </body>
 </html>
