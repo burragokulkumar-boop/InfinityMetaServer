@@ -250,17 +250,41 @@ function bindDeviceButtons(){
 function formatDate(v){try{return new Date(v).toLocaleString()}catch{return v||'—'}}
 async function openDevice(id){
   selected=String(id);
-  document.getElementById('devicesPage').classList.add('hidden');
-  document.getElementById('detailPage').classList.remove('hidden');
+
+  const devicesPage=document.getElementById('devicesPage');
+  const detailPage=document.getElementById('detailPage');
+
+  // Force the page switch instead of relying only on the CSS class.
+  devicesPage.classList.add('hidden');
+  devicesPage.style.display='none';
+
+  detailPage.classList.remove('hidden');
+  detailPage.style.display='block';
+  detailPage.scrollIntoView({behavior:'instant',block:'start'});
+
   document.getElementById('detailTitle').textContent='Loading device…';
   document.getElementById('detailSubtitle').textContent=selected;
+  document.getElementById('detailBadge').textContent='Loading…';
+  document.getElementById('statusText').textContent='Loading device information…';
+
   try{
     await loadDetail();
   }catch(e){
-    toast('Unable to open device: '+e.message);
+    toast('Unable to load device: '+e.message);
+    document.getElementById('statusText').textContent='Unable to load device: '+e.message;
   }
 }
-function showDevices(){selected=null;document.getElementById('detailPage').classList.add('hidden');document.getElementById('devicesPage').classList.remove('hidden');loadDevices()}
+function showDevices(){
+  selected=null;
+  const detailPage=document.getElementById('detailPage');
+  const devicesPage=document.getElementById('devicesPage');
+  detailPage.classList.add('hidden');
+  detailPage.style.display='none';
+  devicesPage.classList.remove('hidden');
+  devicesPage.style.display='';
+  window.scrollTo({top:0,behavior:'instant'});
+  loadDevices();
+}
 async function loadDetail(){
   try{
     const r=await api('/api/admin/devices/'+encodeURIComponent(selected));const d=r.device;
