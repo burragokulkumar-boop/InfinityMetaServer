@@ -338,6 +338,7 @@ app.get("/api/admin/devices", requireAdmin, (req, res) => {
  */
 app.get(
     "/api/admin/devices/:deviceId",
+    requireAdmin,
     (req, res) => {
         const device =
             devices.get(
@@ -430,6 +431,7 @@ app.post("/api/admin/command", requireAdmin, (req, res) => {
  */
 app.get(
     "/api/admin/command-history",
+    requireAdmin,
     (req, res) => {
         const limit = Math.min(
             Math.max(
