@@ -34,6 +34,7 @@ devices.set(TEST_DEVICE_ID, {
     lastSeen: new Date().toISOString(),
     isTestDevice: true
 });
+commands.set(TEST_DEVICE_ID, []);
 const commands = new Map();
 const commandHistory = [];
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "";
@@ -471,6 +472,37 @@ app.post("/api/admin/command", requireAdmin, (req, res) => {
         deviceId,
         existing
     );
+
+    // The synthetic test tablet immediately acknowledges commands,
+    // allowing the admin dashboard controls to be tested without
+    // a physical Android device.
+    if (deviceId === TEST_DEVICE_ID) {
+        const acknowledgement = {
+            deviceId,
+            commandId: command.id,
+            status: "TEST_ACK",
+            message: "Simulated test-device acknowledgement for " + type,
+            acknowledgedAt: now()
+        };
+
+        commandHistory.push(acknowledgement);
+
+        if (commandHistory.length > 500) {
+            commandHistory.splice(
+                0,
+                commandHistory.length - 500
+            );
+        }
+
+        commands.set(deviceId, []);
+
+        return res.json({
+            success: true,
+            command,
+            simulated: true,
+            acknowledgement
+        });
+    }
 
     res.json({
         success: true,
