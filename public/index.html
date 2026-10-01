@@ -264,10 +264,19 @@ async function loadDetail(){
 async function send(type,message=''){
   if(!selected)return;
   try{
-    await api('/api/admin/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceId:selected,type,message})});
-    document.getElementById('statusText').textContent=type+' queued for delivery.';
-    toast(type+' queued');
-    setTimeout(loadDetail,800);
+    const result = await api('/api/admin/command',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({deviceId:selected,type,message})
+    });
+    if(result.simulated){
+      document.getElementById('statusText').textContent='TEST DEVICE · '+type+' acknowledged.';
+      toast('Test device acknowledged · '+type);
+    }else{
+      document.getElementById('statusText').textContent=type+' queued for delivery.';
+      toast(type+' queued');
+    }
+    await loadDetail();
   }catch(e){toast(e.message)}
 }
 function showMessage(){
