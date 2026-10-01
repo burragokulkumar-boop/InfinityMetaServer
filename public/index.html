@@ -236,8 +236,16 @@ async function loadDevices(){
 }
 function formatDate(v){try{return new Date(v).toLocaleString()}catch{return v||'—'}}
 async function openDevice(id){
-  selected=id; document.getElementById('devicesPage').classList.add('hidden');document.getElementById('detailPage').classList.remove('hidden');
-  await loadDetail();
+  selected=String(id);
+  document.getElementById('devicesPage').classList.add('hidden');
+  document.getElementById('detailPage').classList.remove('hidden');
+  document.getElementById('detailTitle').textContent='Loading device…';
+  document.getElementById('detailSubtitle').textContent=selected;
+  try{
+    await loadDetail();
+  }catch(e){
+    toast('Unable to open device: '+e.message);
+  }
 }
 function showDevices(){selected=null;document.getElementById('detailPage').classList.add('hidden');document.getElementById('devicesPage').classList.remove('hidden');loadDevices()}
 async function loadDetail(){
