@@ -18,6 +18,22 @@ const VERSION = "2.0.0";
  * and queued commands. A database can be added later.
  */
 const devices = new Map();
+
+// Built-in test device for validating the Wonder Kiosk admin dashboard.
+// This is clearly marked as synthetic and does not represent a real tablet.
+const TEST_DEVICE_ID = "TEST-WONDER-KIOSK-001";
+devices.set(TEST_DEVICE_ID, {
+    deviceId: TEST_DEVICE_ID,
+    model: "Wonder Kiosk Test Tablet",
+    manufacturer: "Wonder Tech",
+    androidVersion: "Android 16",
+    sdk: 35,
+    packageName: "com.infinitymeta.kiosk",
+    appVersion: "1.0.5",
+    status: "online",
+    lastSeen: new Date().toISOString(),
+    isTestDevice: true
+});
 const commands = new Map();
 const commandHistory = [];
 const adminSessions = new Map();
