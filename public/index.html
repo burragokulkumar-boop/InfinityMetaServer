@@ -192,6 +192,7 @@ h1{font-size:39px;line-height:1.02;letter-spacing:-.055em}
       <button class="device-option green" onclick="send('ENTER_KIOSK')">Enter kiosk</button>
       <button class="device-option" onclick="send('RESTART_KIOSK')">Restart kiosk</button>
       <button class="device-option" onclick="showMessage()">Show message</button>
+      <button class="device-option primary" onclick="setDeviceName()">Set device name</button>
       <button class="device-option primary" onclick="openUpdatePanel()">Update Kiosk App</button>
       <button class="device-option" onclick="confirmClearData()">Clear Infinity Learn data</button>
       <button class="device-option danger" onclick="confirmExit()">Exit kiosk</button>
@@ -258,7 +259,7 @@ async function loadDevices(){
       grid.innerHTML='<div class="empty">No kiosk devices are registered yet.</div>';return;
     }
     grid.innerHTML=data.devices.map(d=>{
-      const name=d.model||'Unknown tablet';
+      const name=d.deviceName||d.model||'Unknown tablet';
       return '<article class="card">'+
         '<div class="device-head"><div class="device-name">'+esc(name)+'</div>'+
         '<span class="badge '+(d.online?'online':'offline')+'">'+(d.online?'Online':'Offline')+'</span></div>'+
@@ -301,7 +302,7 @@ async function openDevice(id){
   try{
     const r=await api('/api/admin/devices/'+encodeURIComponent(selected));
     const d=r.device;
-    info.innerHTML='<b>'+esc(d.model||'Unknown tablet')+'</b> · '+(d.online?'Online':'Offline')+'<br>Android '+esc(d.androidVersion||'—')+' · App v'+esc(d.appVersion||'—');
+    info.innerHTML='<b>'+esc(d.deviceName||d.model||'Unknown tablet')+'</b> · '+(d.online?'Online':'Offline')+'<br>Model '+esc(d.model||'—')+' · Android '+esc(d.androidVersion||'—')+' · App v'+esc(d.appVersion||'—');
   }catch(e){
     info.textContent='Device ID: '+selected;
   }
@@ -410,6 +411,24 @@ async function saveAndSendUpdate(){
   }catch(e){toast(e.message)}
 }
 
+async function setDeviceName(){
+  if(!selected)return;
+  try{
+    const current=await api('/api/admin/devices/'+encodeURIComponent(selected));
+    const currentName=current.device?.deviceName||current.device?.model||'';
+    const name=prompt('Set a name for this device:',currentName);
+    if(name===null)return;
+    const trimmed=name.trim();
+    if(!trimmed){toast('Device name cannot be empty');return;}
+    if(trimmed.length>80){toast('Device name must be 80 characters or fewer');return;}
+    const r=await api('/api/admin/devices/'+encodeURIComponent(selected)+'/name',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceName:trimmed})
+    });
+    closeDeviceOptions();
+    toast(r.simulated?'Test device name updated':'Device name updated');
+    await loadDevices();
+  }catch(e){toast(e.message)}
+}
 function showMessage(){
   const m=prompt('Message to display on the tablet:');
   if(m!==null && m.trim())send('SHOW_MESSAGE',m.trim());
