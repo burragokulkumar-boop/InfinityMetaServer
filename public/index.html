@@ -132,7 +132,7 @@ h1{font-size:39px;line-height:1.02;letter-spacing:-.055em}
 .device-options-modal{display:none;position:fixed;inset:0;z-index:1200;align-items:center;justify-content:center;padding:20px;background:rgba(3,2,10,.72);backdrop-filter:blur(12px)}
 .device-options-modal.open{display:flex}
 .device-options-card{width:min(520px,100%);max-height:min(760px,calc(100vh - 40px));overflow:auto;padding:24px;border:1px solid rgba(190,169,255,.32);border-radius:20px;background:linear-gradient(145deg,rgba(25,18,56,.98),rgba(10,8,25,.98));box-shadow:0 30px 100px rgba(0,0,0,.65),0 0 55px rgba(112,72,255,.16)}
-.device-options-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:20px}.device-options-title{font-size:23px;font-weight:800;letter-spacing:-.03em}.device-options-subtitle{color:#9189a9;margin-top:4px;font-size:12px;word-break:break-all}.device-options-close{width:36px;height:36px;border:1px solid rgba(190,169,255,.2);border-radius:10px;background:rgba(255,255,255,.04);color:#cfc6e8;font-size:20px;line-height:1}.device-options-grid{display:grid;gap:10px}.device-option{border:1px solid rgba(190,169,255,.17);background:linear-gradient(145deg,rgba(27,20,56,.88),rgba(15,11,34,.86));color:#ddd7eb;border-radius:11px;padding:13px 14px;text-align:left;font-weight:650;transition:.15s}.device-option:hover{border-color:rgba(176,108,255,.5);transform:translateY(-1px);background:rgba(39,28,75,.95)}.device-option.primary{background:linear-gradient(135deg,#7144d7,#47319a);color:#fff;border-color:rgba(176,108,255,.45)}.device-option.green{background:rgba(115,230,176,.07);color:#91efbf;border-color:rgba(115,230,176,.2)}.device-option.danger{border-color:rgba(255,113,141,.25);color:#ff9baa}.device-options-info{margin:0 0 18px;padding:12px;border:1px solid rgba(190,169,255,.12);border-radius:11px;background:rgba(10,7,26,.35);color:#a9a1bd;font-size:12px}
+.device-options-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:20px}.device-options-title{font-size:23px;font-weight:800;letter-spacing:-.03em}.device-options-subtitle{color:#9189a9;margin-top:4px;font-size:12px;word-break:break-all}.device-options-close{width:36px;height:36px;border:1px solid rgba(190,169,255,.2);border-radius:10px;background:rgba(255,255,255,.04);color:#cfc6e8;font-size:20px;line-height:1}.device-options-grid{display:grid;gap:10px}.device-option{border:1px solid rgba(190,169,255,.17);background:linear-gradient(145deg,rgba(27,20,56,.88),rgba(15,11,34,.86));color:#ddd7eb;border-radius:11px;padding:13px 14px;text-align:left;font-weight:650;transition:.15s}.device-option:hover{border-color:rgba(176,108,255,.5);transform:translateY(-1px);background:rgba(39,28,75,.95)}.device-option.primary{background:linear-gradient(135deg,#7144d7,#47319a);color:#fff;border-color:rgba(176,108,255,.45)}.device-option.green{background:rgba(115,230,176,.07);color:#91efbf;border-color:rgba(115,230,176,.2)}.device-option.danger{border-color:rgba(255,113,141,.25);color:#ff9baa}.device-options-info{margin:0 0 18px;padding:12px;border:1px solid rgba(190,169,255,.12);border-radius:11px;background:rgba(10,7,26,.35);color:#a9a1bd;font-size:12px}.update-form{display:grid;gap:11px;margin-bottom:15px}.update-form label{display:grid;gap:6px;color:#aaa2c1;font-size:11px;letter-spacing:.04em}.update-form input,.update-form textarea{width:100%;border:1px solid rgba(190,169,255,.18);border-radius:10px;background:rgba(5,4,16,.65);color:#f5f1ff;padding:11px 12px;font:inherit;outline:none;resize:vertical}.update-form input:focus,.update-form textarea:focus{border-color:rgba(176,108,255,.55);box-shadow:0 0 0 3px rgba(140,92,255,.08)}
 </style>
 </head>
 <body>
@@ -192,9 +192,36 @@ h1{font-size:39px;line-height:1.02;letter-spacing:-.055em}
       <button class="device-option green" onclick="send('ENTER_KIOSK')">Enter kiosk</button>
       <button class="device-option" onclick="send('RESTART_KIOSK')">Restart kiosk</button>
       <button class="device-option" onclick="showMessage()">Show message</button>
+      <button class="device-option primary" onclick="openUpdatePanel()">Update Kiosk App</button>
       <button class="device-option" onclick="confirmClearData()">Clear Infinity Learn data</button>
       <button class="device-option danger" onclick="confirmExit()">Exit kiosk</button>
       <button class="device-option danger" onclick="confirmRemoveKiosk()">Remove Kiosk App</button>
+    </div>
+  </div>
+</div>
+<div id="updatePanel" class="device-options-modal" aria-hidden="true">
+  <div class="device-options-card" role="dialog" aria-modal="true" aria-labelledby="updateTitle">
+    <div class="device-options-head">
+      <div>
+        <div id="updateTitle" class="device-options-title">Kiosk App Update</div>
+        <div class="device-options-subtitle">Prepare a signed APK update for this device</div>
+      </div>
+      <button type="button" class="device-options-close" onclick="closeUpdatePanel()">×</button>
+    </div>
+    <div class="device-options-info">
+      The APK must use the same permanent signing key as the installed kiosk app.
+      The tablet verifies the package, version and SHA-256 before installation.
+    </div>
+    <div class="update-form">
+      <label>Version name<input id="updateVersionName" class="login-input" value="1.0.6"></label>
+      <label>Version code<input id="updateVersionCode" class="login-input" type="number" min="1" value="106"></label>
+      <label>HTTPS APK URL<input id="updateApkUrl" class="login-input" placeholder="https://…/InfinityMetaKiosk.apk"></label>
+      <label>SHA-256<input id="updateSha256" class="login-input" placeholder="64-character SHA-256"></label>
+      <label>Release notes<textarea id="updateNotes" class="login-input" rows="3" placeholder="What changed?"></textarea></label>
+    </div>
+    <div class="device-options-grid">
+      <button class="device-option" onclick="saveUpdate()">Save update</button>
+      <button class="device-option green" onclick="saveAndSendUpdate()">Save &amp; Send to this device</button>
     </div>
   </div>
 </div>
@@ -291,7 +318,10 @@ function showDevices(){
   loadDevices();
 }
 document.addEventListener('keydown',event=>{
-  if(event.key==='Escape')closeDeviceOptions();
+  if(event.key==='Escape'){closeUpdatePanel();closeDeviceOptions();}
+});
+document.getElementById('updatePanel').addEventListener('click',event=>{
+  if(event.target.id==='updatePanel')closeUpdatePanel();
 });
 document.getElementById('deviceOptionsModal').addEventListener('click',event=>{
   if(event.target.id==='deviceOptionsModal')closeDeviceOptions();
@@ -305,15 +335,81 @@ async function send(type,message=''){
       body:JSON.stringify({deviceId:selected,type,message})
     });
     if(result.simulated){
-      document.getElementById('statusText').textContent='TEST DEVICE · '+type+' acknowledged.';
       toast('Test device acknowledged · '+type);
     }else{
-      document.getElementById('statusText').textContent=type+' queued for delivery.';
       toast(type+' queued');
     }
-    await loadDetail();
+    await loadDevices();
   }catch(e){toast(e.message)}
 }
+
+async function openUpdatePanel(){
+  if(!selected)return;
+  const panel=document.getElementById('updatePanel');
+  panel.classList.add('open');
+  panel.setAttribute('aria-hidden','false');
+  try{
+    const r=await api('/api/admin/update');
+    const u=r.update||{};
+    if(u.versionName)document.getElementById('updateVersionName').value=u.versionName;
+    if(u.versionCode)document.getElementById('updateVersionCode').value=u.versionCode;
+    if(u.apkUrl)document.getElementById('updateApkUrl').value=u.apkUrl;
+    if(u.sha256)document.getElementById('updateSha256').value=u.sha256;
+    if(u.notes)document.getElementById('updateNotes').value=u.notes;
+  }catch(e){toast(e.message)}
+}
+
+function closeUpdatePanel(){
+  const panel=document.getElementById('updatePanel');
+  panel.classList.remove('open');
+  panel.setAttribute('aria-hidden','true');
+}
+
+function getUpdateForm(){
+  return {
+    versionName:document.getElementById('updateVersionName').value.trim(),
+    versionCode:Number(document.getElementById('updateVersionCode').value),
+    apkUrl:document.getElementById('updateApkUrl').value.trim(),
+    sha256:document.getElementById('updateSha256').value.trim(),
+    notes:document.getElementById('updateNotes').value.trim()
+  };
+}
+
+async function saveUpdate(){
+  try{
+    const update=getUpdateForm();
+    const r=await api('/api/admin/update',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(update)
+    });
+    toast('Update '+r.update.versionName+' saved');
+  }catch(e){toast(e.message)}
+}
+
+async function saveAndSendUpdate(){
+  try{
+    const update=getUpdateForm();
+    await api('/api/admin/update',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(update)
+    });
+    const r=await api('/api/admin/update/send',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({deviceIds:[selected]})
+    });
+    closeUpdatePanel();
+    if(r.results?.[0]?.simulated){
+      toast('Test device acknowledged · UPDATE_APP');
+    }else{
+      toast('Update '+update.versionName+' queued for '+selected);
+    }
+    await loadDevices();
+  }catch(e){toast(e.message)}
+}
+
 function showMessage(){
   const m=prompt('Message to display on the tablet:');
   if(m!==null && m.trim())send('SHOW_MESSAGE',m.trim());
