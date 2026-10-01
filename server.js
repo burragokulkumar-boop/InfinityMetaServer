@@ -129,6 +129,7 @@ const SUPPORTED_COMMANDS = new Set([
     "EXIT_KIOSK",
     "CLEAR_APP_DATA",
     "REMOVE_KIOSK_APP",
+    "SET_DEVICE_NAME",
     "UPDATE_APP"
 ]);
 
@@ -139,6 +140,7 @@ function now() {
 function cleanDevice(device) {
     return {
         deviceId: device.deviceId,
+        deviceName: device.deviceName || "",
         model: device.model || "unknown",
         androidVersion: device.androidVersion || "unknown",
         sdk: device.sdk ?? null,
@@ -394,6 +396,53 @@ app.get("/api/admin/devices", requireAdmin, (req, res) => {
     res.json({
         devices: result
     });
+});
+
+/*
+ * Admin: set a friendly name for one device.
+ * The name is stored on the server and also sent to the kiosk
+ * so the Android client can persist it locally.
+ */
+app.post("/api/admin/devices/:deviceId/name", requireAdmin, (req, res) => {
+    const deviceId = req.params.deviceId;
+    const device = devices.get(deviceId);
+
+    if (!device) {
+        return res.status(404).json({ error: "Device not registered" });
+    }
+
+    const deviceName = String(req.body?.deviceName || "").trim();
+
+    if (!deviceName) {
+        return res.status(400).json({ error: "deviceName is required" });
+    }
+
+    if (deviceName.length > 80) {
+        return res.status(400).json({ error: "deviceName must be 80 characters or fewer" });
+    }
+
+    device.deviceName = deviceName;
+    devices.set(deviceId, device);
+
+    const command = createCommand("SET_DEVICE_NAME", JSON.stringify({ deviceName }));
+    const queue = commands.get(deviceId) || [];
+    queue.push(command);
+    commands.set(deviceId, queue);
+
+    if (deviceId === TEST_DEVICE_ID) {
+        const acknowledgement = {
+            deviceId,
+            commandId: command.id,
+            status: "TEST_ACK",
+            message: "Simulated test-device name update",
+            acknowledgedAt: now()
+        };
+        commandHistory.push(acknowledgement);
+        commands.set(deviceId, []);
+        return res.json({ success: true, device, command, simulated: true, acknowledgement });
+    }
+
+    res.json({ success: true, device, command, simulated: false });
 });
 
 /*
