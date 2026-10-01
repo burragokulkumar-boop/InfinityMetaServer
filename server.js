@@ -36,10 +36,13 @@ devices.set(TEST_DEVICE_ID, {
 });
 const commands = new Map();
 const commandHistory = [];
-const adminSessions = new Map();
-
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+const ADMIN_SESSION_SECRET =
+    process.env.ADMIN_SESSION_SECRET ||
+    ADMIN_PASSWORD;
+
+const ADMIN_SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 
 function parseCookies(req) {
     const header = req.headers.cookie || "";
@@ -54,11 +57,57 @@ function parseCookies(req) {
     );
 }
 
+function createAdminToken() {
+    const issuedAt = Math.floor(Date.now() / 1000);
+    const payload = `wonder|admin|${issuedAt}`;
+    const signature = crypto
+        .createHmac("sha256", ADMIN_SESSION_SECRET)
+        .update(payload)
+        .digest("hex");
+
+    return Buffer.from(`${payload}|${signature}`).toString("base64url");
+}
+
+function isValidAdminToken(token) {
+    try {
+        const decoded = Buffer.from(token, "base64url").toString("utf8");
+        const parts = decoded.split("|");
+
+        if (parts.length !== 4 || parts[0] !== "wonder" || parts[1] !== "admin") {
+            return false;
+        }
+
+        const issuedAt = Number(parts[2]);
+        if (!Number.isFinite(issuedAt)) {
+            return false;
+        }
+
+        if (Math.floor(Date.now() / 1000) - issuedAt > ADMIN_SESSION_MAX_AGE) {
+            return false;
+        }
+
+        const payload = `${parts[0]}|${parts[1]}|${parts[2]}`;
+        const expected = crypto
+            .createHmac("sha256", ADMIN_SESSION_SECRET)
+            .update(payload)
+            .digest("hex");
+
+        return crypto.timingSafeEqual(
+            Buffer.from(parts[3]),
+            Buffer.from(expected)
+        );
+    } catch {
+        return false;
+    }
+}
+
 function requireAdmin(req, res, next) {
     const token = parseCookies(req).wonder_admin;
-    if (!token || !adminSessions.has(token)) {
+
+    if (!token || !isValidAdminToken(token)) {
         return res.status(401).json({ error: "Admin authentication required" });
     }
+
     next();
 }
 
@@ -136,9 +185,11 @@ app.post("/api/admin/login", (req, res) => {
         return res.status(401).json({ error: "Invalid username or password" });
     }
 
-    const token = crypto.randomBytes(32).toString("hex");
-    adminSessions.set(token, { createdAt: Date.now() });
-    res.setHeader("Set-Cookie", `wonder_admin=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=43200`);
+    const token = createAdminToken();
+    res.setHeader(
+        "Set-Cookie",
+        `wonder_admin=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${ADMIN_SESSION_MAX_AGE}`
+    );
     res.json({ success: true });
 });
 
@@ -147,9 +198,10 @@ app.get("/api/admin/session", requireAdmin, (req, res) => {
 });
 
 app.post("/api/admin/logout", requireAdmin, (req, res) => {
-    const token = parseCookies(req).wonder_admin;
-    adminSessions.delete(token);
-    res.setHeader("Set-Cookie", "wonder_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");
+    res.setHeader(
+        "Set-Cookie",
+        "wonder_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"
+    );
     res.json({ success: true });
 });
 
