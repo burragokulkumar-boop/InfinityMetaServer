@@ -52,7 +52,8 @@ const SUPPORTED_COMMANDS = new Set([
     "ENTER_KIOSK",
     "RESTART_KIOSK",
     "EXIT_KIOSK",
-    "CLEAR_APP_DATA"
+    "CLEAR_APP_DATA",
+    "REMOVE_KIOSK_APP"
 ]);
 
 function now() {
