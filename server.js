@@ -34,8 +34,8 @@ devices.set(TEST_DEVICE_ID, {
     lastSeen: new Date().toISOString(),
     isTestDevice: true
 });
-commands.set(TEST_DEVICE_ID, []);
 const commands = new Map();
+commands.set(TEST_DEVICE_ID, []);
 const commandHistory = [];
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
