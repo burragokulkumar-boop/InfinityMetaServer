@@ -88,7 +88,7 @@ h1{font-size:39px;line-height:1.02;letter-spacing:-.055em}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
 .card,.panel{position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(21,16,47,.9),rgba(11,9,26,.82));
  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-.card:before,.panel:before{content:"";position:absolute;left:12%;right:12%;top:0;height:1px;background:linear-gradient(90deg,transparent,#a981ff,transparent);opacity:.75}
+.card:before,.panel:before{content:"";position:absolute;left:12%;right:12%;top:0;height:1px;pointer-events:none;background:linear-gradient(90deg,transparent,#a981ff,transparent);opacity:.75}
 .card{padding:20px;transition:.18s transform,.18s border-color,.18s box-shadow}
 .card:hover{transform:translateY(-3px);border-color:rgba(176,108,255,.46);box-shadow:0 25px 70px rgba(0,0,0,.5),0 0 30px rgba(140,92,255,.07)}
 .device-head{display:flex;justify-content:space-between;gap:12px;align-items:center}
@@ -230,9 +230,22 @@ async function loadDevices(){
         '<div><b>Android:</b> '+esc(d.androidVersion)+' (SDK '+esc(d.sdk)+')</div>'+
         '<div><b>App:</b> '+esc(d.packageName)+' · v'+esc(d.appVersion)+'</div>'+
         '<div><b>Last seen:</b> '+esc(formatDate(d.lastSeen))+'</div></div>'+
-        '<button class="open" onclick="openDevice('+JSON.stringify(d.deviceId)+')">Open device</button></article>';
+        '<button type="button" class="open" data-device-id="'+esc(d.deviceId)+'">Open device</button></article>';
     }).join('');
+    bindDeviceButtons();
   }catch(e){setServer(false);document.getElementById('deviceGrid').innerHTML='<div class="empty">Unable to load devices. '+esc(e.message)+'</div>'}
+}
+function bindDeviceButtons(){
+  const grid=document.getElementById('deviceGrid');
+  if(!grid)return;
+  grid.onclick=function(event){
+    const button=event.target.closest('button.open');
+    if(!button || !grid.contains(button))return;
+    event.preventDefault();
+    event.stopPropagation();
+    const id=button.getAttribute('data-device-id');
+    if(id)openDevice(id);
+  };
 }
 function formatDate(v){try{return new Date(v).toLocaleString()}catch{return v||'—'}}
 async function openDevice(id){
