@@ -181,6 +181,7 @@ h1{font-size:39px;line-height:1.02;letter-spacing:-.055em}
           <button class="action" onclick="showMessage()">Show message</button>
           <button class="action" onclick="confirmClearData()">Clear Infinity Learn data</button>
           <button class="action danger" onclick="confirmExit()">Exit kiosk</button>
+          <button class="action danger" onclick="confirmRemoveKiosk()">Remove Kiosk App</button>
         </div>
         <div class="section-title" style="margin-top:25px">Status</div>
         <div id="statusText" class="subtitle">Ready.</div>
@@ -267,6 +268,11 @@ function showMessage(){
 }
 function confirmExit(){
   if(confirm('Send Exit Kiosk to this device?'))send('EXIT_KIOSK');
+}
+function confirmRemoveKiosk(){
+  if(confirm('WARNING: This will release Device Owner control and start the Android uninstall process on this tablet. Continue?')){
+    send('REMOVE_KIOSK_APP');
+  }
 }
 function confirmClearData(){
   if(confirm('Clear all Infinity Learn app data on this device? This cannot be undone.'))send('CLEAR_APP_DATA');
