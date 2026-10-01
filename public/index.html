@@ -128,6 +128,11 @@ h1{font-size:39px;line-height:1.02;letter-spacing:-.055em}
 .log{max-height:330px;overflow:auto;border-top:1px solid var(--line);margin-top:15px}.log-row{padding:11px 0;border-bottom:1px solid rgba(190,169,255,.1);font-size:12px}.log-row b{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#b497ff}
 .notice{position:fixed;right:18px;bottom:18px;background:#17102f;color:#fff;border:1px solid #49366e;padding:12px 15px;border-radius:11px;box-shadow:var(--shadow);z-index:50}
 @media(max-width:800px){.hero{min-height:330px}.hero-copy{max-width:260px}.core{left:65%;top:61%;width:150px;height:150px}.hero-label{display:none}.detail{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.info-grid,.stats{grid-template-columns:1fr}.header{padding:0 16px}}
+
+.device-options-modal{display:none;position:fixed;inset:0;z-index:1200;align-items:center;justify-content:center;padding:20px;background:rgba(3,2,10,.72);backdrop-filter:blur(12px)}
+.device-options-modal.open{display:flex}
+.device-options-card{width:min(520px,100%);max-height:min(760px,calc(100vh - 40px));overflow:auto;padding:24px;border:1px solid rgba(190,169,255,.32);border-radius:20px;background:linear-gradient(145deg,rgba(25,18,56,.98),rgba(10,8,25,.98));box-shadow:0 30px 100px rgba(0,0,0,.65),0 0 55px rgba(112,72,255,.16)}
+.device-options-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:20px}.device-options-title{font-size:23px;font-weight:800;letter-spacing:-.03em}.device-options-subtitle{color:#9189a9;margin-top:4px;font-size:12px;word-break:break-all}.device-options-close{width:36px;height:36px;border:1px solid rgba(190,169,255,.2);border-radius:10px;background:rgba(255,255,255,.04);color:#cfc6e8;font-size:20px;line-height:1}.device-options-grid{display:grid;gap:10px}.device-option{border:1px solid rgba(190,169,255,.17);background:linear-gradient(145deg,rgba(27,20,56,.88),rgba(15,11,34,.86));color:#ddd7eb;border-radius:11px;padding:13px 14px;text-align:left;font-weight:650;transition:.15s}.device-option:hover{border-color:rgba(176,108,255,.5);transform:translateY(-1px);background:rgba(39,28,75,.95)}.device-option.primary{background:linear-gradient(135deg,#7144d7,#47319a);color:#fff;border-color:rgba(176,108,255,.45)}.device-option.green{background:rgba(115,230,176,.07);color:#91efbf;border-color:rgba(115,230,176,.2)}.device-option.danger{border-color:rgba(255,113,141,.25);color:#ff9baa}.device-options-info{margin:0 0 18px;padding:12px;border:1px solid rgba(190,169,255,.12);border-radius:11px;background:rgba(10,7,26,.35);color:#a9a1bd;font-size:12px}
 </style>
 </head>
 <body>
@@ -172,42 +177,28 @@ h1{font-size:39px;line-height:1.02;letter-spacing:-.055em}
     <div id="deviceGrid" class="grid"></div>
   </section>
 
-  <section id="detailPage" class="device-detail-overlay">
-    <button class="back" onclick="showDevices()">← All devices</button>
-    <div class="top">
-      <div>
-        <h1 id="detailTitle">Device</h1>
-        <div class="subtitle" id="detailSubtitle"></div>
-      </div>
-      <div id="detailBadge" class="badge"></div>
-    </div>
 
-    <div class="detail">
-      <div class="panel">
-        <div class="section-title">Device information</div>
-        <div id="infoGrid" class="info-grid"></div>
-        <div class="section-title" style="margin-top:25px">Command history</div>
-        <div id="history" class="log"></div>
-      </div>
-
-      <div class="panel">
-        <div class="section-title">Kiosk controls</div>
-        <div class="actions">
-          <button class="action primary" onclick="send('PING')">Test connection</button>
-          <button class="action green" onclick="send('ENTER_KIOSK')">Enter kiosk</button>
-          <button class="action" onclick="send('RESTART_KIOSK')">Restart kiosk</button>
-          <button class="action" onclick="showMessage()">Show message</button>
-          <button class="action" onclick="confirmClearData()">Clear Infinity Learn data</button>
-          <button class="action danger" onclick="confirmExit()">Exit kiosk</button>
-          <button class="action danger" onclick="confirmRemoveKiosk()">Remove Kiosk App</button>
-        </div>
-        <div class="section-title" style="margin-top:25px">Status</div>
-        <div id="statusText" class="subtitle">Ready.</div>
-      </div>
-    </div>
-  </section>
 </main>
 <div id="notice" class="notice hidden"></div>
+<div id="deviceOptionsModal" class="device-options-modal" aria-hidden="true">
+  <div class="device-options-card" role="dialog" aria-modal="true" aria-labelledby="deviceOptionsTitle">
+    <div class="device-options-head">
+      <div><div id="deviceOptionsTitle" class="device-options-title">Device options</div><div id="deviceOptionsSubtitle" class="device-options-subtitle"></div></div>
+      <button type="button" class="device-options-close" onclick="closeDeviceOptions()" aria-label="Close">×</button>
+    </div>
+    <div id="deviceOptionsInfo" class="device-options-info">Choose an action for this device.</div>
+    <div class="device-options-grid">
+      <button class="device-option primary" onclick="send('PING')">Test connection</button>
+      <button class="device-option green" onclick="send('ENTER_KIOSK')">Enter kiosk</button>
+      <button class="device-option" onclick="send('RESTART_KIOSK')">Restart kiosk</button>
+      <button class="device-option" onclick="showMessage()">Show message</button>
+      <button class="device-option" onclick="confirmClearData()">Clear Infinity Learn data</button>
+      <button class="device-option danger" onclick="confirmExit()">Exit kiosk</button>
+      <button class="device-option danger" onclick="confirmRemoveKiosk()">Remove Kiosk App</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 let selected=null;
@@ -268,48 +259,43 @@ function bindDeviceButtons(){
 function formatDate(v){try{return new Date(v).toLocaleString()}catch{return v||'—'}}
 async function openDevice(id){
   selected=String(id);
+  const modal=document.getElementById('deviceOptionsModal');
+  const title=document.getElementById('deviceOptionsTitle');
+  const subtitle=document.getElementById('deviceOptionsSubtitle');
+  const info=document.getElementById('deviceOptionsInfo');
 
-  const devicesPage=document.getElementById('devicesPage');
-  const detailPage=document.getElementById('detailPage');
-
-  devicesPage.style.display='none';
-  detailPage.classList.add('open');
+  title.textContent='Device options';
+  subtitle.textContent=selected;
+  info.textContent='Loading device information…';
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
   document.body.style.overflow='hidden';
 
-  document.getElementById('detailTitle').textContent='Loading device…';
-  document.getElementById('detailSubtitle').textContent=selected;
-  document.getElementById('detailBadge').textContent='Loading…';
-  document.getElementById('statusText').textContent='Loading device information…';
-
   try{
-    await loadDetail();
+    const r=await api('/api/admin/devices/'+encodeURIComponent(selected));
+    const d=r.device;
+    info.innerHTML='<b>'+esc(d.model||'Unknown tablet')+'</b> · '+(d.online?'Online':'Offline')+'<br>Android '+esc(d.androidVersion||'—')+' · App v'+esc(d.appVersion||'—');
   }catch(e){
-    toast('Unable to load device: '+e.message);
-    document.getElementById('statusText').textContent='Unable to load device: '+e.message;
+    info.textContent='Device ID: '+selected;
   }
+}
+function closeDeviceOptions(){
+  const modal=document.getElementById('deviceOptionsModal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden','true');
+  document.body.style.overflow='';
 }
 function showDevices(){
   selected=null;
-  const detailPage=document.getElementById('detailPage');
-  const devicesPage=document.getElementById('devicesPage');
-  detailPage.classList.remove('open');
-  document.body.style.overflow='';
-  devicesPage.style.display='';
+  closeDeviceOptions();
   loadDevices();
 }
-async function loadDetail(){
-  try{
-    const r=await api('/api/admin/devices/'+encodeURIComponent(selected));const d=r.device;
-    document.getElementById('detailTitle').textContent=d.model||'Unknown tablet';
-    document.getElementById('detailSubtitle').textContent=d.deviceId;
-    const b=document.getElementById('detailBadge');b.textContent=d.online?'Online':'Offline';b.className='badge '+(d.online?'online':'offline');
-    const rows=[['Device ID',d.deviceId],['Model',d.model],['Android',d.androidVersion],['SDK',d.sdk],['Package',d.packageName],['App version',d.appVersion],['Registered',formatDate(d.registeredAt)],['Last seen',formatDate(d.lastSeen)]];
-    document.getElementById('infoGrid').innerHTML=rows.map(x=>'<div class="info"><small>'+esc(x[0])+'</small><strong>'+esc(x[1])+'</strong></div>').join('');
-    const h=await api('/api/admin/command-history?limit=100');
-    history=h.history.filter(x=>x.deviceId===selected).reverse();
-    document.getElementById('history').innerHTML=history.length?history.map(x=>'<div class="log-row"><b>'+esc(x.status)+'</b> · '+esc(x.commandId)+'<br>'+esc(x.message||'')+'<br><span class="subtitle">'+esc(formatDate(x.acknowledgedAt))+'</span></div>').join(''):'<div class="subtitle" style="padding-top:12px">No command acknowledgements yet.</div>';
-  }catch(e){toast(e.message)}
-}
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape')closeDeviceOptions();
+});
+document.getElementById('deviceOptionsModal').addEventListener('click',event=>{
+  if(event.target.id==='deviceOptionsModal')closeDeviceOptions();
+});
 async function send(type,message=''){
   if(!selected)return;
   try{
