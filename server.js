@@ -37,6 +37,15 @@ devices.set(TEST_DEVICE_ID, {
 const commands = new Map();
 commands.set(TEST_DEVICE_ID, []);
 const commandHistory = [];
+
+let latestUpdate = {
+    versionName: "1.0.6",
+    versionCode: 106,
+    apkUrl: "",
+    sha256: "",
+    notes: "Infinity Meta Kiosk update",
+    publishedAt: null
+};
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const ADMIN_SESSION_SECRET =
@@ -119,7 +128,8 @@ const SUPPORTED_COMMANDS = new Set([
     "RESTART_KIOSK",
     "EXIT_KIOSK",
     "CLEAR_APP_DATA",
-    "REMOVE_KIOSK_APP"
+    "REMOVE_KIOSK_APP",
+    "UPDATE_APP"
 ]);
 
 function now() {
@@ -416,6 +426,112 @@ app.get(
                     ).length
             }
         });
+
+/*
+ * Admin: configure and send an APK update.
+ * APK delivery remains HTTPS; the Android client verifies the
+ * package name, version and SHA-256 before installing.
+ */
+app.get("/api/admin/update", requireAdmin, (req, res) => {
+    res.json({ update: latestUpdate });
+});
+
+app.post("/api/admin/update", requireAdmin, (req, res) => {
+    const body = req.body || {};
+    const versionName = String(body.versionName || "").trim();
+    const versionCode = Number(body.versionCode);
+    const apkUrl = String(body.apkUrl || "").trim();
+    const sha256 = String(body.sha256 || "").trim().toLowerCase();
+    const notes = String(body.notes || "").trim();
+
+    if (!versionName || !Number.isInteger(versionCode) || versionCode <= 0) {
+        return res.status(400).json({
+            error: "versionName and a positive integer versionCode are required"
+        });
+    }
+
+    if (!/^https:\/\//i.test(apkUrl)) {
+        return res.status(400).json({ error: "apkUrl must use HTTPS" });
+    }
+
+    if (!/^[a-f0-9]{64}$/i.test(sha256)) {
+        return res.status(400).json({
+            error: "sha256 must be a 64-character SHA-256 hex string"
+        });
+    }
+
+    latestUpdate = {
+        versionName,
+        versionCode,
+        apkUrl,
+        sha256,
+        notes,
+        publishedAt: now()
+    };
+
+    res.json({ success: true, update: latestUpdate });
+});
+
+app.post("/api/admin/update/send", requireAdmin, (req, res) => {
+    const deviceIds = Array.isArray(req.body?.deviceIds)
+        ? req.body.deviceIds.map(String).filter(Boolean)
+        : [];
+
+    if (!deviceIds.length) {
+        return res.status(400).json({ error: "At least one deviceId is required" });
+    }
+
+    if (!latestUpdate.apkUrl || !latestUpdate.sha256) {
+        return res.status(400).json({
+            error: "Configure the APK URL and SHA-256 before sending an update"
+        });
+    }
+
+    const results = [];
+
+    for (const deviceId of deviceIds) {
+        if (!devices.has(deviceId)) {
+            results.push({ deviceId, queued: false, error: "Device not registered" });
+            continue;
+        }
+
+        const command = createCommand(
+            "UPDATE_APP",
+            JSON.stringify({
+                apkUrl: latestUpdate.apkUrl,
+                versionCode: latestUpdate.versionCode,
+                versionName: latestUpdate.versionName,
+                sha256: latestUpdate.sha256
+            })
+        );
+
+        const queue = commands.get(deviceId) || [];
+        queue.push(command);
+        commands.set(deviceId, queue);
+
+        if (deviceId === TEST_DEVICE_ID) {
+            const acknowledgement = {
+                deviceId,
+                commandId: command.id,
+                status: "TEST_ACK",
+                message: "Simulated test-device update acknowledgement",
+                acknowledgedAt: now()
+            };
+            commandHistory.push(acknowledgement);
+            commands.set(deviceId, []);
+            results.push({ deviceId, queued: true, simulated: true, command });
+        } else {
+            results.push({ deviceId, queued: true, simulated: false, command });
+        }
+    }
+
+    if (commandHistory.length > 500) {
+        commandHistory.splice(0, commandHistory.length - 500);
+    }
+
+    res.json({ success: true, update: latestUpdate, results });
+});
+
     }
 );
 
