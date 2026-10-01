@@ -98,6 +98,24 @@ h1{font-size:39px;line-height:1.02;letter-spacing:-.055em}
 .open{width:100%;border:1px solid rgba(176,108,255,.45);border-radius:10px;background:linear-gradient(135deg,rgba(121,72,224,.85),rgba(73,50,143,.88));color:#fff;padding:11px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;box-shadow:0 10px 28px rgba(90,50,170,.18)}
 .open:hover{filter:brightness(1.12);box-shadow:0 12px 32px rgba(140,92,255,.3)}
 .empty{background:rgba(15,11,34,.75);border:1px dashed #443760;border-radius:var(--radius);padding:55px;text-align:center;color:#8f88a8}
+.device-detail-overlay{
+ display:none!important;
+ position:fixed!important;
+ inset:0!important;
+ z-index:999!important;
+ overflow-y:auto!important;
+ padding:34px 22px 65px!important;
+ background:
+  radial-gradient(circle at 52% 20%,rgba(112,72,255,.16),transparent 28%),
+  linear-gradient(145deg,#060511,#0b0820 48%,#070612)!important;
+}
+.device-detail-overlay.open{
+ display:block!important;
+}
+.device-detail-overlay .detail-shell{
+ max-width:1220px;
+ margin:0 auto;
+}
 .hidden{display:none!important}.back{border:1px solid var(--line);background:rgba(18,13,40,.75);color:#c6b7e9;padding:8px 12px;border-radius:8px;margin-bottom:16px;font-weight:700}
 .detail{display:grid;grid-template-columns:1.45fr .75fr;gap:16px}.panel{padding:22px}
 .info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}
@@ -154,7 +172,7 @@ h1{font-size:39px;line-height:1.02;letter-spacing:-.055em}
     <div id="deviceGrid" class="grid"></div>
   </section>
 
-  <section id="detailPage" class="hidden">
+  <section id="detailPage" class="device-detail-overlay">
     <button class="back" onclick="showDevices()">← All devices</button>
     <div class="top">
       <div>
@@ -254,13 +272,9 @@ async function openDevice(id){
   const devicesPage=document.getElementById('devicesPage');
   const detailPage=document.getElementById('detailPage');
 
-  // Force the page switch instead of relying only on the CSS class.
-  devicesPage.classList.add('hidden');
   devicesPage.style.display='none';
-
-  detailPage.classList.remove('hidden');
-  detailPage.style.display='block';
-  detailPage.scrollIntoView({behavior:'instant',block:'start'});
+  detailPage.classList.add('open');
+  document.body.style.overflow='hidden';
 
   document.getElementById('detailTitle').textContent='Loading device…';
   document.getElementById('detailSubtitle').textContent=selected;
@@ -278,11 +292,9 @@ function showDevices(){
   selected=null;
   const detailPage=document.getElementById('detailPage');
   const devicesPage=document.getElementById('devicesPage');
-  detailPage.classList.add('hidden');
-  detailPage.style.display='none';
-  devicesPage.classList.remove('hidden');
+  detailPage.classList.remove('open');
+  document.body.style.overflow='';
   devicesPage.style.display='';
-  window.scrollTo({top:0,behavior:'instant'});
   loadDevices();
 }
 async function loadDetail(){
